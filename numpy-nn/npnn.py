@@ -2,15 +2,33 @@ import numpy as np
 
 class FFNN(object):
 
-    def __init__(self, x, y, nn_architecture) -> None:
+    def __init__(self, sizes, epochs = 10, learn_rate = 0.01) -> None:
         super().__init__()
-        self.x = x
-        self.w1 = np.random.rand(self.x.shape[1], 5)
-        self.w2 = np.random.rand(self.w1.shape[1], 1)
-        self.y = y
-        self.b1 = np.random.rand(self.x.shape[1], 5)
-        self.b2 = np.random.rand(self.w1.shape[1], 1)
-        self.pred = np.zeros(self.y.shape)
+        
+        self.sizes = sizes
+        self.epochs = epochs
+        self.learn_rate = learn_rate
+        self.params = self.initialization()
+
+        # self.x = x
+        # self.w1 = np.random.rand(self.x.shape[1], 5)
+        # self.w2 = np.random.rand(self.w1.shape[1], 1)
+        # self.y = y
+        # self.b1 = np.random.rand(self.x.shape[1], 5)
+        # self.b2 = np.random.rand(self.w1.shape[1], 1)
+        # self.pred = np.zeros(self.y.shape)
+
+    def initialization(self):
+        input_layer = self.sizes["input"]
+        h1 = self.sizes["h1"]
+        h2 = self.sizes["h2"]
+        output = self.sizes["output"]
+
+        params = {
+            'w1':np.random.randn(h1, input_layer) * np.sqrt(1. / h1),
+            'w2':np.random.randn(h2, hidden_1) * np.sqrt(1. / h2),
+            'w3':np.random.randn(output, h2) * np.sqrt(1. / output)
+        }
 
     def add_layer(self, neurons = 10) -> None:
         pass
