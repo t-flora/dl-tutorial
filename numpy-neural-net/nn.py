@@ -76,6 +76,9 @@ class FFNN(object):
             return (x>0)*1
         elif func == "sigmoid":
             return self.sigmoid(x)*(1-self.sigmoid)
+        elif func == "softmax":
+            exponentials = np.exp(x - x.max())
+            return self.softmax(x)*(1-exponentials/np.sum(exponentials, axis=0))
         else:
             raise("ValueError")
 
@@ -96,7 +99,7 @@ class FFNN(object):
         exponentials = np.exp(x - x.max())
         return exponentials/np.sum(exponentials, axis=0)
 
-    def feedforward(self, func = leaky_relu, x_train):
+    def feedforward(self, x_train, func = sigmoid):
         """
         Calculates the activation values for each neuron in a layer, up to the output layer
         """
@@ -104,14 +107,14 @@ class FFNN(object):
         self.params['A0'] = x_train
 
         for i in range(1, len(self.params)):
-            self.params[f"Z{i}"] = np.dot(self.params[f"W{i}"], self.params["A{i-1}"])
+            self.params[f"Z{i}"] = np.dot(self.params[f"W{i}"], self.params[f"A{i-1}"])
             self.params[f"A{i}"] = func(self.params[f'Z{i}'])
 
-        return self.params[f"A{len(self.dimensions)-1}"]
+        return self.params[f"A{self.n_layers-1}"]
         # self.a1 = func(np.dot(self.x, self.w1) + self.b1)
         # self.pred = func(np.dot(self.a1, self.w2) + self.b2)
 
-    def backprop(self, output, y_train) -> None:
+    def backprop(self, output, y_train) -> dict:
         """
         Applies backpropagation to each layer to compute the derivative of the loss function as a function
         of each weight
@@ -119,7 +122,7 @@ class FFNN(object):
         
         delta_params = {}
 
-        error = (output - y_train)/output.shape[0] * self.derivative(self.params[f'Z{self.n_layers-1}'], func = "sigmoid")
+        error = (output - y_train)/output.shape[0] * self.derivative(self.params[f'Z{self.n_layers-1}'], func = "softmax")
         delta_params[f"W{self.n_layers-1}"] = np.outer(error, self.params[f"A{self.n_layers-2}"])
 
         for idx in range(self.n_layers-1, 1, -1):
@@ -150,18 +153,41 @@ class FFNN(object):
             delta_params (dict): Dictionary containing the computed gradient values for parameter matrices
         """        
         for delta in delta_params:
-            
+            self.params[delta] -= self.l_rate*delta_params[delta]
 
 
-    def stochastic_gd(self):
-        """
-        Custom stochastic gradient descent optimizer
-        """
-        pass
+    # def stochastic_gd(self):
+    #     """
+    #     Custom stochastic gradient descent optimizer
+    #     """
+    #     pass
 
-    def loss(self):
-        pass
+    # def loss(self, output, X_test, y_test):
+    #     """MSE loss
 
-    def train(self, X_train, X_test, y_train, y_test):
+    #     Args:
+    #         output ([type]): [description]
+    #     """
+    #     mse = np.square(y_test - output).mean()
+    #     for xi, yi in zip(X_test, y_test):
+    #         output = self.feedforward(X_test)
+    #         mse = (np.square(yi-output))
+
+    #     pass
+
+    def crossEntropy(self, output, y_train):
+        '''Cross entropy cost function '''
+        eps = 1e-10
+        yhat = np.clip(yhat, eps, 1-eps)
+        return - np.nansum(y_train*np.log(yhat))
+
+    def train(self, X_train, y_train):
         for it in range(self.epochs):
-
+            # Iterate over each training example
+            for xi, yi in zip(X_train, y_train):
+                output = self.feedforward(xi)
+                delta_params = self.backprop(yi, output)
+                self.update_params(delta_params)
+            
+            print(f"Epoch: {it}, loss: {l}")
+            # l = self.loss()
